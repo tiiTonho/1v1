@@ -1,0 +1,134 @@
+import pygame
+import os
+
+width = 1500
+height = 1000
+win = pygame.display.set_mode((width, height))
+pygame.display.set_caption("1v1 battle ship space")
+
+largura_naves, altura_naves = 110, 110
+
+white = (255, 255, 255)
+black = (0, 0, 0)
+RED = (255, 0, 0)
+yellow = (255, 255, 0)
+
+borda = pygame.Rect(width//2 - 1, 0, 2, height)
+
+grey_hit = pygame.USEREVENT + 1
+red_hit = pygame.USEREVENT + 2
+
+fps = 60
+vel = 15
+bullets_vel = 13
+max_bullets = 5
+
+enemy_0 = pygame.image.load(os.path.join('1v1assets', 'pixil-frame-0.png'))
+enemy_0 = pygame.transform.scale(enemy_0, (largura_naves, altura_naves))
+
+enemy_1 = pygame.image.load(os.path.join('1v1assets', 'pixil-frame-1.png'))
+enemy_1 = pygame.transform.scale(enemy_1, (largura_naves, altura_naves))
+
+
+
+
+def draw_window(grey, red, grey_bullets, red_bullets):
+    win.fill(white)
+    pygame.draw.rect(win, black, borda)
+    win.blit(enemy_0, (grey.x, grey.y))
+    win.blit(enemy_1, (red.x, red.y))
+    pygame.display.update()
+
+    for bullet in red_bullets:
+        pygame.draw.rect(win, RED, bullet)
+        
+    for bullet in grey_bullets:
+        pygame.draw.rect(win, yellow, bullet)
+
+
+
+
+def grey_handle_movement(keys_pressed, red):
+    keys_pressed = pygame.key.get_pressed()
+    if keys_pressed[pygame.K_LEFT] and red.x - vel > borda.x + borda.width:  # mover para a esquerda
+        red.x -= vel
+    if keys_pressed[pygame.K_RIGHT] and red.x + vel + red.width < width:  # mover para a direita
+        red.x += vel
+    if keys_pressed[pygame.K_UP] and red.y - vel > 0:  # mover para cima
+        red.y -= vel
+    if keys_pressed[pygame.K_DOWN] and red.y + vel + red.height < height:  # mover para baixoawd
+        red.y += vel
+
+
+
+
+def red_handle_movement(keys_pressed, grey):
+    keys_pressed = pygame.key.get_pressed()
+    if keys_pressed[pygame.K_a] and grey.x - vel > 0:  # mover para a esquerda
+        grey.x -= vel
+    if keys_pressed[pygame.K_d] and grey.x + vel + grey.width < borda.x:  # mover para a direita
+        grey.x += vel
+    if keys_pressed[pygame.K_w] and grey.y - vel > 0:  # mover para cima
+        grey.y -= vel
+    if keys_pressed[pygame.K_s] and grey.y + vel + grey.height < height:  # mover para baixo
+        grey.y += vel
+
+
+
+
+def handle_bullets(grey_bullets, red_bullets, grey, red):
+    for bullet in grey_bullets:
+        bullet.x += bullets_vel
+        if red.colliderect(bullet):
+            pygame.event.post(pygame.event.Event(red_hit))
+            grey_bullets.remove(bullet)
+
+    for bullet in red_bullets:
+        bullet.x -= bullets_vel
+        if grey.colliderect(bullet):
+            pygame.event.post(pygame.event.Event(grey_hit))
+            red_bullets.remove(bullet)
+
+
+
+
+def main():
+    red = pygame.Rect(100, 500, largura_naves, altura_naves)
+    grey = pygame.Rect(1300, 500, largura_naves, altura_naves)
+
+    grey_bullets = []
+    red_bullets = []
+
+    clock = pygame.time.Clock()
+    run = True
+    while run:
+        clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+
+                run = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LCTRL and len(grey_bullets) < max_bullets:
+                    bullet = pygame.rect.Rect(grey.x + grey.width, grey.y + grey.height//2, 20, 8)
+                    grey_bullets.append(bullet)
+
+                if event.key == pygame.K_RCTRL and len(red_bullets) < max_bullets:
+                    bullet = pygame.rect.Rect(red.x, red.y + red.height//2, 100, 50)
+                    red_bullets.append(bullet)
+
+        print(grey_bullets, red_bullets)
+        keys_pressed = pygame.key.get_pressed()
+        grey_handle_movement(keys_pressed, grey)
+        red_handle_movement(keys_pressed, red)
+
+        handle_bullets(grey_bullets, red_bullets, grey, red)
+
+        draw_window(red, grey, red_bullets, grey_bullets)
+
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
